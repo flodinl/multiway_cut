@@ -27,22 +27,16 @@ def solve_lp(cost_matrix, terminals):
 	assert(len(z[0][0]) == k)
 	for i in range(k):
 		for u in range(n):
-			# this handles the equality "constraints" that aren't really constraints
-			# print("value of i is:", i)
-			# print("value of u is:", u)
-			# print(x)
 			if u in terminals:
-				# print("in if block")
+				# this handles the equality "constraints" that just fix certain variable values
 				if i == terminals.index(u):
 					x[u][i] = 1
 				else:
 					x[u][i] = 0
 			else:
-				# print("in else block")
 				x[u][i] = pulp.LpVariable("x_" + str(u) + "^" + str(i), lowBound=0)
 			for v in range(u):
 				z[u][v][i] = pulp.LpVariable("z_" + str(u) + "," + str(v) + "^" + str(i))
-	# print(x)
 
 	lp = pulp.LpProblem("LP", pulp.LpMinimize)
 
@@ -66,15 +60,9 @@ def solve_lp(cost_matrix, terminals):
 				lp += (z[u][v][i] >= x[u][i] - x[v][i])
 				lp += (z[u][v][i] >= x[v][i] - x[u][i])
 
-
-	# for i in range(k):
-	# 	lp += (x[terminals[i]] == 1)
-
 	# solve the LP
 	status = lp.solve()
 	assert(pulp.LpStatus[lp.status] == "Optimal")
-
-	# print(x)
 
 	# turn the resulting variable values into a list
 	x_vector_list = [[None for i in range(k)] for j in range(n)]
@@ -85,7 +73,6 @@ def solve_lp(cost_matrix, terminals):
 			else:
 				x_vector_list[u][i] = x[u][i].varValue
 
-	# print(x_vector_list)
 	return x_vector_list
 
 def l1_norm(v1, v2):
@@ -109,16 +96,13 @@ def lp_apx(graph_cost_matrix, terminals):
 	# x_vectors[u][i] is x_u^i
 	x_vectors = solve_lp(graph_cost_matrix, terminals)
 	C = [[] for i in range(k)]
-	# print(C)
 	r = random.random()
 	rand_perm = list(range(k))
 	random.shuffle(rand_perm)
-	# print(rand_perm)
 	X = set()
 	for i in range(k - 1):
 		ball = set()
 		e_pi_i = [0] * k
-		# print(e_pi_i)
 		e_pi_i[rand_perm[i]] = 1
 		for index, x in enumerate(x_vectors):
 			if (1 / 2) * l1_norm(e_pi_i, x) <= r:
@@ -128,7 +112,6 @@ def lp_apx(graph_cost_matrix, terminals):
 		X = X | C[rand_perm[i]]
 	V = set(range(n))
 	C[rand_perm[k - 1]] = V - X
-	# print(C)
 
 	edge_set = set()
 	for i, C_i in enumerate(C):
@@ -138,7 +121,6 @@ def lp_apx(graph_cost_matrix, terminals):
 			else:
 				for u in C_i:
 					for v in C_j:
-						# print("u, v are", u, v)
 						if graph_cost_matrix[u][v] != 0:
 							edge_set.add((u, v))
 
@@ -149,7 +131,7 @@ def lp_apx(graph_cost_matrix, terminals):
 
 def find_min_cut(G, s, t):
 	'''
-	Given GraphX graph G and integers s, t representing indices of vertices in the graph, return
+	Given NetworkX graph G and integers s, t representing indices of vertices in the graph, return
 	a set of edges that is the minimum cost cut between nodes s and t
 	'''
 	cut_value, node_partition = nx.minimum_cut(G, s, t)
@@ -172,9 +154,9 @@ def get_cost(graph_cost_matrix, edge_set):
 		total_cost += graph_cost_matrix[i][j]
 	return total_cost
 
-def make_graphx_graph(cost_matrix):
+def make_nx_graph(cost_matrix):
 	'''
-	Takes a cost_matrix and returns a GraphX graph object representing the graph
+	Takes a cost_matrix and returns a NetworkX graph object representing the graph
 	'''
 	G = nx.Graph()
 	G.add_nodes_from(range(len(cost_matrix)))
@@ -188,9 +170,9 @@ def make_graphx_graph(cost_matrix):
 
 def mincut_apx(graph_cost_matrix, terminals):
 	'''
-	Given graph_cost_matrix where entry (i, j) is the cost of edge (i, j), and terminals which
-	is a list of indices of the terminal vertices of G, returns a list of edges (i, j)
-	and their total cost using a min-cut based 2-approximation.
+	Given graph_cost_matrix where entry (i, j) is the cost of edge (i, j) if it exists and 0 otherwise,
+	and terminals which is a list of indices of the terminal vertices of G, returns a set of edges (i, j)
+	that is a multiway cut and their total cost using a min-cut based 2-approximation.
 	'''
 
 	n = len(graph_cost_matrix)
@@ -210,7 +192,7 @@ def mincut_apx(graph_cost_matrix, terminals):
 				t_row[index] = math.inf
 		new_cost_matrix.append(t_row)
 
-		G = make_graphx_graph(new_cost_matrix)
+		G = make_nx_graph(new_cost_matrix)
 
 		min_cut_edges = find_min_cut(G, terminal, n) # n is the index of the sink t
 		edge_set = edge_set | min_cut_edges
@@ -243,12 +225,12 @@ def read_graph_from_text_file(filepath):
 	Reads in a graph from "filepath" in the parent directory that is a textfile consisting of
 	the rows of the cost matrix, where entries are separated by commas and rows are separated
 	by new lines, followed by a new line, followed by a comma-separated list of which
-	rows correspond to terminals. Example of a triangle with two vertices as terminals and unit edge costs
+	rows correspond to terminals. Example of a triangle with two vertices as terminals and edge costs all of 3
 	in this format: 
 	
-	0, 1, 1
-	1, 0, 1
-	1, 1, 0
+	0, 3, 3
+	3, 0, 3
+	3, 3, 0
 
 	0, 2
 	'''
@@ -259,7 +241,6 @@ def read_graph_from_text_file(filepath):
 		if line == "\n":
 			terminals_line = f.readline()
 		else:
-			# print(line)
 			cost_matrix.append(list(map(float, line.split(","))))
 	terminals = list(map(int, terminals_line.split(",")))
 	return cost_matrix, terminals
