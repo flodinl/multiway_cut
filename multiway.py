@@ -275,10 +275,10 @@ def write_graph_to_file(cost_matrix, terminals, filepath):
 
 
 def main():
-	filepath = "test_graph.pickle"
-	# cost_matrix, terminals = read_graph_from_text_file("test_graph.txt")
+	filepath = "test_graph.txt"
+	cost_matrix, terminals = read_graph_from_text_file(filepath)
 	# write_test_graph(filepath)
-	cost_matrix, terminals = read_saved_graph(filepath)
+	# cost_matrix, terminals = read_saved_graph(filepath)
 	mincut_cost, mincut_edge_set = mincut_apx(cost_matrix, terminals)
 	lp_cost, lp_edge_set = lp_apx(cost_matrix, terminals)
 	print("cost of mincut 2-approximation is", mincut_cost, "with edge set", mincut_edge_set)
