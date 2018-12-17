@@ -3,6 +3,7 @@ import networkx as nx
 import pickle
 import pulp
 import random
+import copy
 
 
 def solve_lp(cost_matrix, terminals):
@@ -179,10 +180,10 @@ def mincut_apx(graph_cost_matrix, terminals):
 	
 	edge_set = set()
 	for terminal in terminals:
-		new_cost_matrix = graph_cost_matrix.copy()
+		new_cost_matrix = copy.deepcopy(graph_cost_matrix)
 		# add sink node t to new_cost_matrix with infinite cost edges to all other terminals
-		for terminal_row in new_cost_matrix:
-			if terminal_row in terminals:
+		for index, terminal_row in enumerate(new_cost_matrix):
+			if (index in terminals) and (index != terminal):
 				terminal_row.append(math.inf)
 			else:
 				terminal_row.append(0)
